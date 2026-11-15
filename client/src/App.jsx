@@ -1,17 +1,11 @@
-import Navbar from './components/Navbar';
+import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
-import SoftBackdrop from './components/SoftBackdrop';
-import Footer from './components/Footer';
-import LenisScroll from './components/lenis';
 
 function App() {
 	return (
 		<>
-			<SoftBackdrop />
-			<LenisScroll />
-			<Navbar />
-			<Home />
-			<Footer />
+			{/* <Home /> */}
+			<Dashboard/>
 		</>
 	);
 }
