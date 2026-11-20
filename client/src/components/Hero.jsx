@@ -3,8 +3,11 @@ import { PrimaryButton, GhostButton } from "./Buttons";
 import { motion } from "framer-motion";
 import { Show, SignUpButton } from "@clerk/react";
 import RepositoryInput from "./RepositoryInput";
+import API from "../api/axios";
+import { useNavigate } from "react-router-dom";
 
 export default function Hero() {
+  const navigate=useNavigate();
 
   const mainImageUrl =
     "https://images.unsplash.com/photo-1576267423445-b2e0074d68a4?q=80&w=1600&auto=format&fit=crop";
@@ -24,8 +27,13 @@ export default function Hero() {
   ];
 
   const handleAnalyze = (repoUrl) => {
-    console.log('Analyzing:', repoUrl);
-  };
+    navigate('/onboard', {
+        state: {
+            mode: 'new',
+            repoUrl,
+        },
+    });
+};
 
   return (
     <>
