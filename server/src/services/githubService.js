@@ -11,9 +11,13 @@ const getHeaders = () => {
   if (rawToken && rawToken.trim()) {
     const cleanToken = rawToken
       .trim()
+      .replace(/^["']|["']$/g, "")
       .replace(/^Bearer\s+/i, "")
-      .replace(/^token\s+/i, "");
-    headers.Authorization = `Bearer ${cleanToken}`;
+      .replace(/^token\s+/i, "")
+      .trim();
+    if (cleanToken) {
+      headers.Authorization = `Bearer ${cleanToken}`;
+    }
   }
 
   return headers;

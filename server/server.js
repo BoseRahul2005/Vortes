@@ -69,6 +69,26 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    githubTokenLoaded: Boolean(
+      process.env.GITHUB_TOKEN && process.env.GITHUB_TOKEN.trim()
+    ),
+    time: new Date().toISOString(),
+  });
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+    githubTokenLoaded: Boolean(
+      process.env.GITHUB_TOKEN && process.env.GITHUB_TOKEN.trim()
+    ),
+    time: new Date().toISOString(),
+  });
+});
+
 app.use('/api/repositories', repositoryRoutes);
 app.use('/repositories', repositoryRoutes);
 app.use('/api/rag', ragRoutes);
@@ -76,4 +96,9 @@ app.use('/rag', ragRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}...`);
+  console.log(
+    `[Config] GITHUB_TOKEN is ${
+      process.env.GITHUB_TOKEN ? "LOADED (5,000 req/hr)" : "MISSING (60 req/hr limit)"
+    }`
+  );
 });
