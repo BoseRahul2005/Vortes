@@ -13,11 +13,15 @@ connectChromaDb();
 const repositoryRoutes = require('./src/routes/repositoryRoutes.js');
 const ragRoutes = require('./src/routes/ragRoutes.js');
 
+const clientUrl = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.trim().replace(/\/$/, "")
+  : null;
+
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
-  process.env.CLIENT_URL,
+  clientUrl,
 ].filter(Boolean);
 
 // CORS configuration supporting credentials (cookies / headers)
@@ -25,10 +29,17 @@ app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g., mobile apps, curl, Postman)
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) return callback(null, true);
+
+      const cleanOrigin = origin.replace(/\/$/, "");
+      if (
+        allowedOrigins.includes(cleanOrigin) ||
+        (clientUrl && cleanOrigin === clientUrl) ||
+        cleanOrigin.endsWith(".vercel.app")
+      ) {
         return callback(null, true);
       }
-      return callback(new Error("Blocked by CORS"));
+      return callback(new Error(`Blocked by CORS: ${origin}`));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
