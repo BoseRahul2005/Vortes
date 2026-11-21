@@ -11,6 +11,7 @@ connectDB();
 connectChromaDb();
 
 const repositoryRoutes = require('./src/routes/repositoryRoutes.js');
+const ragRoutes = require('./src/routes/ragRoutes.js');
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -57,9 +58,9 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-// Mount on both /api/repositories and /repositories to match frontend baseURL
 app.use('/api/repositories', repositoryRoutes);
 app.use('/repositories', repositoryRoutes);
+app.use('/api/rag', ragRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}...`);
