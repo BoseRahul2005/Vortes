@@ -16,12 +16,27 @@ const COLLECTION_METADATA = {
   "hnsw:space": "cosine",
 };
 
+const withTimeout = (promise, ms, errorMsg) => {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(errorMsg)), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() =>
+    clearTimeout(timeoutId),
+  );
+};
+
 const getCollection = async () => {
   try {
-    const collection = await chroma.getOrCreateCollection({
-      name: COLLECTION_NAME,
-      metadata: COLLECTION_METADATA,
-    });
+    const collection = await withTimeout(
+      chroma.getOrCreateCollection({
+        name: COLLECTION_NAME,
+        metadata: COLLECTION_METADATA,
+        embeddingFunction: null,
+      }),
+      2500,
+      "ChromaDB connection timed out (is Chroma running?)",
+    );
 
     return collection;
   } catch (error) {

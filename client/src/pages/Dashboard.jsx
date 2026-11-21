@@ -378,13 +378,19 @@ export default function Dashboard({ repo: repoProp }) {
     sender: chatConfig.agentName || "Codebase AI",
     time: "just now",
     text: actualRepository
-      ? `Your GitHub repository ${repoName} is connected successfully.\n\nSelect a file from the Explorer to view its source code.\n\nAI-powered repository analysis will be available after RAG integration.`
-      : "You're viewing the Vortes demo workspace. Connect a repository to explore its actual files.",
+      ? `Your repository ${repoName} is connected.\n\nAsk me anything about your codebase, architecture, authentication flows, or API routes!`
+      : "You're viewing the Vortes demo workspace. Connect a repository to explore and ask questions about its actual code.",
   });
 
   const [messages, setMessages] = useState([getInitialMessage()]);
-
   const [chatInput, setChatInput] = useState("");
+  const [isAiThinking, setIsAiThinking] = useState(false);
+  const chatEndRef = useRef(null);
+
+  // Auto-scroll chat to latest message
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isAiThinking]);
 
   // --------------------------------------------------
   // 4B. REPOSITORY SWITCHING & MANAGEMENT
@@ -613,6 +619,7 @@ export default function Dashboard({ repo: repoProp }) {
     setSearchQuery("");
 
     setChatInput("");
+    setIsAiThinking(false);
 
     setMessages([
       {
@@ -620,8 +627,8 @@ export default function Dashboard({ repo: repoProp }) {
         sender: chatConfig.agentName || "Codebase AI",
         time: "just now",
         text: actualRepository
-          ? `Your GitHub repository ${repoName} is connected successfully.\n\nSelect a file from the Explorer to view its source code.\n\nAI-powered repository analysis will be available after RAG integration.`
-          : "You're viewing the Vortes demo workspace. Connect a repository to explore its actual files.",
+          ? `Your repository ${repoName} is connected.\n\nAsk me anything about your codebase, architecture, authentication flows, or API routes!`
+          : "You're viewing the Vortes demo workspace. Connect a repository to explore and ask questions about its actual code.",
       },
     ]);
   }, [repositoryIdentity]);
@@ -731,51 +738,102 @@ export default function Dashboard({ repo: repoProp }) {
   };
 
   // --------------------------------------------------
-  // 9. DEMO AI CHAT
+  // 9. AI REPOSITORY CHAT (RAG API INTEGRATION)
   // --------------------------------------------------
 
-  const handleSendMessage = (customQuery) => {
+  const handleSendMessage = async (customQuery) => {
     const query = (customQuery !== undefined ? customQuery : chatInput).trim();
 
-    if (!query) return;
+    if (!query || isAiThinking) return;
+
+    if (!actualRepository?._id) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: "user-" + Date.now(),
+          sender: "You",
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          text: query,
+        },
+        {
+          id: "ai-" + (Date.now() + 1),
+          sender: chatConfig.agentName || "Codebase AI",
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          text: "Please select or connect a repository from the header dropdown before asking questions.",
+          isError: true,
+        },
+      ]);
+      setChatInput("");
+      return;
+    }
 
     const userMsg = {
       id: "user-" + Date.now(),
       sender: "You",
-      time: "just now",
+      time: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
       text: query,
     };
 
-    let demoReply = `This is a simulated demo response for "${query}". Actual repository analysis will be available after codebase indexing and RAG are implemented.`;
-
-    const lower = query.toLowerCase();
-
-    if (
-      lower.includes("authentication") ||
-      lower.includes("auth") ||
-      lower.includes("session") ||
-      lower.includes("login")
-    ) {
-      demoReply =
-        "DEMO RESPONSE — Not based on your connected repository.\n\nAuthentication example:\n\n• src/auth/session.ts: Example session management module.\n\n• src/routes/auth.ts: Example authentication routes.\n\nThese are sample paths used to demonstrate the interface.";
-    } else if (lower.includes("route") || lower.includes("api")) {
-      demoReply =
-        "DEMO RESPONSE — Not based on your connected repository.\n\nExample API structure:\n\n• src/routes/auth.ts: Authentication endpoints.\n\n• src/routes/api.ts: Example API endpoints.\n\nThese are illustrative sample files.";
-    } else if (lower.includes("db") || lower.includes("database")) {
-      demoReply =
-        "DEMO RESPONSE — Not based on your connected repository.\n\nExample database module:\n\n• src/db.ts: Example database connection configuration.\n\nActual database analysis will require codebase indexing.";
-    }
-
-    const aiMsg = {
-      id: "ai-" + (Date.now() + 1),
-      sender: chatConfig.agentName || "Codebase AI",
-      time: "just now",
-      text: demoReply,
-    };
-
-    setMessages((prev) => [...prev, userMsg, aiMsg]);
-
+    setMessages((prev) => [...prev, userMsg]);
     setChatInput("");
+    setIsAiThinking(true);
+
+    try {
+      const response = await API.post("/rag/ask", {
+        repositoryId: actualRepository._id,
+        query,
+      });
+
+      const data = response.data?.data;
+      const answer =
+        data?.answer ||
+        "I analyzed the repository, but no answer could be generated.";
+      const sources = data?.sources || [];
+
+      const aiMsg = {
+        id: "ai-" + Date.now(),
+        sender: chatConfig.agentName || "Codebase AI",
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        text: answer,
+        sources,
+      };
+
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (error) {
+      console.error("RAG Ask Error:", error);
+      const errMsg =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to generate repository answer. Please check if your repository is indexed.";
+
+      const errorAiMsg = {
+        id: "ai-err-" + Date.now(),
+        sender: chatConfig.agentName || "Codebase AI",
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        text: `Sorry, I encountered an issue analyzing the codebase:\n\n${errMsg}`,
+        isError: true,
+      };
+
+      setMessages((prev) => [...prev, errorAiMsg]);
+    } finally {
+      setIsAiThinking(false);
+    }
   };
 
   // --------------------------------------------------
@@ -1222,12 +1280,12 @@ export default function Dashboard({ repo: repoProp }) {
                   {chatConfig.title || "Ask your codebase"}
                 </h2>
 
-                <p className="text-xs text-slate-400">Demo conversation</p>
+                <p className="text-xs text-slate-400">Grounded in repository</p>
               </div>
             </div>
 
-            <span className="text-[10px] font-mono tracking-wider px-2 py-0.5 rounded border border-white/10 text-slate-400 uppercase bg-white/[0.02]">
-              DEMO MODE
+            <span className="text-[10px] font-mono tracking-wider px-2 py-0.5 rounded border border-indigo-500/30 text-indigo-300 uppercase bg-indigo-950/40">
+              RAG ACTIVE
             </span>
           </div>
 
@@ -1250,7 +1308,13 @@ export default function Dashboard({ repo: repoProp }) {
                 className="flex items-start gap-3 text-xs leading-relaxed"
               >
                 {msg.sender === (chatConfig.agentName || "Codebase AI") ? (
-                  <div className="size-7 rounded-lg bg-indigo-950/80 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5">
+                  <div
+                    className={`size-7 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 ${
+                      msg.isError
+                        ? "bg-red-950/80 border-red-500/40 text-red-400"
+                        : "bg-indigo-950/80 border-indigo-500/30 text-indigo-400"
+                    }`}
+                  >
                     <Bot className="size-3.5" />
                   </div>
                 ) : (
@@ -1270,22 +1334,108 @@ export default function Dashboard({ repo: repoProp }) {
                     </span>
                   </div>
 
-                  <div className="text-slate-300 text-xs leading-relaxed whitespace-pre-line">
+                  <div
+                    className={`text-xs leading-relaxed whitespace-pre-line ${
+                      msg.isError ? "text-red-300" : "text-slate-300"
+                    }`}
+                  >
                     {msg.text}
                   </div>
+
+                  {/* Sources citation list */}
+                  {msg.sources && msg.sources.length > 0 && (
+                    <div className="mt-2.5 pt-2 border-t border-white/5">
+                      <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block mb-1.5">
+                        Referenced files:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {msg.sources.map((src, sIdx) => {
+                          const fileName =
+                            src.filePath?.split("/").pop() || src.filePath;
+                          return (
+                            <button
+                              key={sIdx}
+                              type="button"
+                              onClick={() => {
+                                if (src.filePath && actualRepository?._id) {
+                                  handleSelectFile({
+                                    id: src.filePath,
+                                    path: src.filePath,
+                                    name: fileName,
+                                  });
+                                }
+                              }}
+                              title={`Open ${src.filePath}${
+                                src.startLine
+                                  ? ` (lines ${src.startLine}-${src.endLine})`
+                                  : ""
+                              }`}
+                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-white/[0.04] hover:bg-indigo-950/50 border border-white/10 hover:border-indigo-500/40 text-[10px] font-mono text-indigo-300 hover:text-white transition cursor-pointer"
+                            >
+                              <FileCode className="size-3 text-indigo-400 shrink-0" />
+                              <span className="truncate max-w-[170px]">
+                                {fileName}
+                              </span>
+                              {src.startLine && (
+                                <span className="text-slate-500 text-[9px]">
+                                  :{src.startLine}-{src.endLine}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
+
+            {/* AI Thinking Animation */}
+            {isAiThinking && (
+              <div className="flex items-start gap-3 text-xs leading-relaxed">
+                <div className="size-7 rounded-lg bg-indigo-950/80 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5">
+                  <Bot className="size-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold text-slate-200">
+                      {chatConfig.agentName || "Codebase AI"}
+                    </span>
+                    <span className="text-[11px] text-indigo-400 font-mono animate-pulse">
+                      Thinking...
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-400 py-1">
+                    <Loader2 className="size-3.5 animate-spin text-indigo-400" />
+                    <span>Analyzing codebase & generating answer...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div ref={chatEndRef} />
           </div>
 
           {/* Chat Input */}
 
           <div className="p-4 border-t border-[#141923] bg-[#070a10] shrink-0">
-            <div className="mb-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                TRY ASKING
-              </span>
-            </div>
+            {/* Clickable suggestion chips */}
+            {chatConfig.suggestions && chatConfig.suggestions.length > 0 && (
+              <div className="mb-2.5 flex flex-wrap gap-1.5">
+                {chatConfig.suggestions.slice(0, 3).map((suggestion, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    disabled={isAiThinking}
+                    onClick={() => handleSendMessage(suggestion)}
+                    className="text-[10px] text-slate-400 hover:text-indigo-300 bg-white/[0.03] hover:bg-indigo-950/40 border border-white/8 hover:border-indigo-500/30 px-2 py-1 rounded-md transition text-left truncate max-w-full cursor-pointer disabled:opacity-50"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <form
               onSubmit={(e) => {
@@ -1298,23 +1448,29 @@ export default function Dashboard({ repo: repoProp }) {
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
+                disabled={isAiThinking}
                 placeholder={
                   chatConfig.placeholder || "Where is authentication handled?"
                 }
-                className="w-full bg-transparent text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none pr-2"
+                className="w-full bg-transparent text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none pr-2 disabled:opacity-50"
               />
 
               <button
                 type="submit"
-                className="size-6 rounded-md hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer shrink-0"
+                disabled={isAiThinking || !chatInput.trim()}
+                className="size-6 rounded-md hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer shrink-0 disabled:opacity-40"
                 title="Send query"
               >
-                <ArrowRight className="size-3.5" />
+                {isAiThinking ? (
+                  <Loader2 className="size-3.5 animate-spin text-indigo-400" />
+                ) : (
+                  <ArrowRight className="size-3.5" />
+                )}
               </button>
             </form>
 
             <p className="mt-2 text-[10px] text-slate-600">
-              Responses are simulated until RAG integration.
+              AI answers grounded in your connected repository.
             </p>
           </div>
         </section>

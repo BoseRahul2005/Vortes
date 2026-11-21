@@ -61,6 +61,7 @@ app.get("/", (req, res) => {
 app.use('/api/repositories', repositoryRoutes);
 app.use('/repositories', repositoryRoutes);
 app.use('/api/rag', ragRoutes);
+app.use('/rag', ragRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}...`);

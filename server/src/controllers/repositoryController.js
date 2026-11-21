@@ -8,6 +8,7 @@ const {
 } = require("../services/githubService.js");
 const Repository = require("../models/Repository.js");
 const buildFileTree = require("../utils/buildFileTree.js");
+const { ingestRepository } = require("../services/ingestionService.js");
 
 // Check if a repository is already in the database and verify its files
 const checkRepository = async (req, res) => {
@@ -142,6 +143,14 @@ const addRepository = async (req, res) => {
     const repository = await Repository.create({
       ...repoData,
       userId,
+    });
+
+    // Trigger background RAG vector ingestion in ChromaDB (non-blocking)
+    ingestRepository(repository).catch((err) => {
+      console.warn(
+        `Background ChromaDB ingestion warning for ${repository.fullName}:`,
+        err.message,
+      );
     });
 
     return res.status(201).json({

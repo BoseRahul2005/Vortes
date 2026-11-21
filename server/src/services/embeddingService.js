@@ -80,6 +80,16 @@ const countInputTokens = async (text) => {
 // ==========================================
 
 const validateInputLength = async (text) => {
+  // Fast path: If text is under 20,000 characters, it is safely within the 8,192 token limit.
+  // This avoids a redundant round-trip API call for every embedding.
+  if (text.length < 20000) {
+    return {
+      valid: true,
+      tokenCount: Math.ceil(text.length / 4),
+      maxTokens: MAX_INPUT_TOKENS,
+    };
+  }
+
   const tokenCount = await countInputTokens(text);
 
   if (tokenCount > MAX_INPUT_TOKENS) {
