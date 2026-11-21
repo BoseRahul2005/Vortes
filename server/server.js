@@ -4,9 +4,11 @@ const express = require("express");
 const cors = require("cors");
 const { clerkMiddleware } = require('@clerk/express');
 const connectDB = require("./src/config/db.js");
+const connectChromaDb = require("./src/config/chroma.js");
 
 const app = express();
 connectDB();
+connectChromaDb();
 
 const repositoryRoutes = require('./src/routes/repositoryRoutes.js');
 
