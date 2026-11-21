@@ -1,16 +1,31 @@
 const GITHUB_API_BASE_URL = "https://api.github.com";
 
+const getHeaders = () => {
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "Vortes-App",
+  };
+
+  const rawToken = process.env.GITHUB_TOKEN;
+  if (rawToken && rawToken.trim()) {
+    const cleanToken = rawToken
+      .trim()
+      .replace(/^Bearer\s+/i, "")
+      .replace(/^token\s+/i, "");
+    headers.Authorization = `Bearer ${cleanToken}`;
+  }
+
+  return headers;
+};
+
 const getRepositoryDetails = async (owner, repo) => {
   try {
     const response = await fetch(
       `${GITHUB_API_BASE_URL}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
       {
         method: "GET",
-        headers: {
-          Accept: "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2022-11-28",
-          "User-Agent": "Vortes",
-        },
+        headers: getHeaders(),
       },
     );
 
@@ -23,7 +38,9 @@ const getRepositoryDetails = async (owner, repo) => {
         const remaining = response.headers.get("x-ratelimit-remaining");
 
         if (remaining === "0") {
-          throw new Error("GitHub API rate limit exceeded");
+          throw new Error(
+            "GitHub API rate limit exceeded. Please configure GITHUB_TOKEN in your environment variables for 5,000 requests/hour.",
+          );
         }
 
         throw new Error("GitHub API access forbidden");
@@ -55,11 +72,7 @@ const getRepositoryDetails = async (owner, repo) => {
 const githubRequest = async (endpoint) => {
   const response = await fetch(`${GITHUB_API_BASE_URL}${endpoint}`, {
     method: "GET",
-    headers: {
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      "User-Agent": "Vortes",
-    },
+    headers: getHeaders(),
   });
 
   if (!response.ok) {
@@ -71,7 +84,9 @@ const githubRequest = async (endpoint) => {
       const remaining = response.headers.get("x-ratelimit-remaining");
 
       if (remaining === "0") {
-        throw new Error("GitHub API rate limit exceeded.");
+        throw new Error(
+          "GitHub API rate limit exceeded. Please configure GITHUB_TOKEN in your environment variables for 5,000 requests/hour.",
+        );
       }
     }
 
