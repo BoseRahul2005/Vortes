@@ -29,7 +29,7 @@ Powered by **Retrieval-Augmented Generation (RAG)**, Vortes combines code-aware 
 
 ## 🧠 How Vortes Works
 
-Vortes uses a Retrieval-Augmented Generation (RAG) pipeline specifically designed for software repositories.
+Vortes uses a Retrieval-Augmented Generation (RAG) pipeline to understand and answer questions about code repositories.
 
 The entire process consists of two main stages.
 
@@ -294,7 +294,7 @@ Make sure your ChromaDB instance is running and accessible using the configured 
 
 ```bash
 cd server
-npm run dev
+node/ nodemon server.js
 ```
 
 ### 6. Start the Frontend
