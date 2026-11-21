@@ -395,7 +395,8 @@ const deleteRepository = async (repositoryId) => {
       },
     });
 
-    const documentCount = existingDocuments.ids.length;
+    const existingIds = existingDocuments?.ids || [];
+    const documentCount = existingIds.length;
 
     if (documentCount === 0) {
       return {
@@ -406,11 +407,9 @@ const deleteRepository = async (repositoryId) => {
       };
     }
 
-    // Delete all documents belonging to this repository
+    // Delete all documents belonging to this repository by IDs
     await collection.delete({
-      where: {
-        repositoryId: repositoryId.trim(),
-      },
+      ids: existingIds,
     });
 
     return {

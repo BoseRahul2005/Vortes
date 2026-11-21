@@ -6,6 +6,7 @@ const {
   getRepositoryById,
   getRepositoryFiles,
   getRepositoryFileContent,
+  deleteRepository,
 } = require("../controllers/repositoryController.js");
 const { protectRoute } = require("../middleware/authMiddleware.js");
 
@@ -20,6 +21,9 @@ repoRouter.post("/check", protectRoute, checkRepository);
 
 // Add a GitHub repository to DB
 repoRouter.post("/add", protectRoute, addRepository);
+
+// Delete repository from MongoDB and ChromaDB
+repoRouter.delete("/:id", protectRoute, deleteRepository);
 
 // Get repository by ID
 repoRouter.get("/:id", protectRoute, getRepositoryById);

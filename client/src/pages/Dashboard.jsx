@@ -30,6 +30,7 @@ import {
   AlertCircle,
   Plus,
   X,
+  Trash2,
   ExternalLink,
 } from "lucide-react";
 
@@ -290,6 +291,11 @@ export default function Dashboard({ repo: repoProp }) {
   const [addModalStage, setAddModalStage] = useState("");
   const [newRepoUrl, setNewRepoUrl] = useState("");
 
+  // Delete Repository Modal & Loading
+  const [repoToDelete, setRepoToDelete] = useState(null);
+  const [deletingRepoId, setDeletingRepoId] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
+
   const dropdownRef = useRef(null);
 
   const repositoryIdentity =
@@ -425,6 +431,51 @@ export default function Dashboard({ repo: repoProp }) {
     }
     setDropdownOpen(false);
     await loadRepository(targetRepo);
+  };
+
+  // Delete repository from MongoDB and ChromaDB
+  const confirmDeleteRepository = async () => {
+    if (!repoToDelete?._id) return;
+    const targetId = repoToDelete._id;
+    setDeletingRepoId(targetId);
+    setDeleteError("");
+
+    try {
+      const response = await API.delete(`/repositories/${targetId}`);
+      if (response.data.success) {
+        // Remove from userRepos
+        const remainingRepos = userRepos.filter((r) => r._id !== targetId);
+        setUserRepos(remainingRepos);
+
+        // If currently active repo was deleted, switch to next available or reset
+        if (currentRepo?._id === targetId) {
+          if (remainingRepos.length > 0) {
+            await loadRepository(remainingRepos[0]);
+          } else {
+            setCurrentRepo(null);
+            setCurrentFileTree([]);
+            setCurrentTotalFiles(0);
+            setSelectedFile("");
+            setActiveFileData(null);
+            setFileContent("");
+            setOpenFolders({});
+          }
+        }
+
+        setRepoToDelete(null);
+      } else {
+        setDeleteError(response.data.message || "Failed to delete repository.");
+      }
+    } catch (err) {
+      console.error("Delete repository error:", err);
+      setDeleteError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to delete repository."
+      );
+    } finally {
+      setDeletingRepoId(null);
+    }
   };
 
   // Fetch all repositories for this user from DB on mount
@@ -895,7 +946,7 @@ export default function Dashboard({ repo: repoProp }) {
   // --------------------------------------------------
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#06080d] text-slate-200 select-none">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#06080d] text-slate-200">
       {/* Resize Overlay */}
 
       {isResizing && (
@@ -911,13 +962,7 @@ export default function Dashboard({ repo: repoProp }) {
 
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
-            <div className="size-6 rounded-lg bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
-              <Sparkles className="size-3.5" />
-            </div>
-
-            <span className="font-semibold text-sm tracking-tight text-white">
-              Vortes
-            </span>
+            <img src="/logo.png" alt="logo" className="h-8" />
           </div>
 
           <div className="h-4 w-px bg-white/10 mx-1 shrink-0" />
@@ -933,7 +978,7 @@ export default function Dashboard({ repo: repoProp }) {
               >
                 <Github className="size-3.5 text-slate-400 group-hover:text-white shrink-0 transition-colors" />
 
-                <span className="font-mono text-slate-200 group-hover:text-white truncate max-w-[180px] sm:max-w-[260px] md:max-w-[340px]">
+                <span className="font-mono text-slate-200 group-hover:text-white truncate max-w-[180px] sm:max-w-[260px] md:max-w-[340px] select-text">
                   {repoName}
                 </span>
 
@@ -998,34 +1043,57 @@ export default function Dashboard({ repo: repoProp }) {
                           item._id === currentRepo?._id ||
                           item.fullName === currentRepo?.fullName;
                         return (
-                          <button
+                          <div
                             key={item._id}
-                            type="button"
-                            onClick={() => handleSwitchRepository(item)}
-                            className={`w-full flex items-center justify-between px-3.5 py-2 text-left hover:bg-white/[0.05] transition group cursor-pointer ${
+                            className={`w-full flex items-center justify-between px-3 py-1.5 transition group ${
                               isSelected
                                 ? "bg-indigo-950/30 text-indigo-200"
-                                : "text-slate-300"
+                                : "hover:bg-white/5 text-slate-300"
                             }`}
                           >
-                            <div className="flex items-center gap-2 min-w-0 mr-2">
-                              <Github className="size-3.5 text-slate-400 group-hover:text-indigo-400 shrink-0" />
-                              <span className="text-xs font-mono truncate">
-                                {item.fullName || item.name}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {item.defaultBranch && (
-                                <span className="text-[9px] font-mono text-slate-400 bg-white/[0.04] border border-white/5 px-1.5 py-0.5 rounded">
-                                  {item.defaultBranch}
+                            <button
+                              type="button"
+                              onClick={() => handleSwitchRepository(item)}
+                              className="flex-1 min-w-0 flex items-center justify-between text-left cursor-pointer mr-1 py-1"
+                            >
+                              <div className="flex items-center gap-2 min-w-0 mr-2">
+                                <Github className="size-3.5 text-slate-400 group-hover:text-indigo-400 shrink-0 transition-colors" />
+                                <span className="text-xs font-mono truncate">
+                                  {item.fullName || item.name}
                                 </span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {item.defaultBranch && (
+                                  <span className="text-[9px] font-mono text-slate-400 bg-white/4 border border-white/5 px-1.5 py-0.5 rounded">
+                                    {item.defaultBranch}
+                                  </span>
+                                )}
+                                {isSelected && (
+                                  <Check className="size-3.5 text-indigo-400 shrink-0" />
+                                )}
+                              </div>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteError("");
+                                setRepoToDelete(item);
+                                setDropdownOpen(false);
+                              }}
+                              disabled={deletingRepoId === item._id}
+                              title={`Delete ${item.fullName || item.name} from MongoDB & ChromaDB`}
+                              className="p-1 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition shrink-0 opacity-60 hover:opacity-100 group-hover:opacity-100 cursor-pointer disabled:opacity-30"
+                            >
+                              {deletingRepoId === item._id ? (
+                                <Loader2 className="size-3 text-red-400 animate-spin" />
+                              ) : (
+                                <Trash2 className="size-3" />
                               )}
-                              {isSelected && (
-                                <Check className="size-3.5 text-indigo-400 shrink-0" />
-                              )}
-                            </div>
-                          </button>
+                            </button>
+                          </div>
                         );
                       })
                     )}
@@ -1053,15 +1121,6 @@ export default function Dashboard({ repo: repoProp }) {
         {/* Right: Repository Metadata */}
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* Connection Status */}
-
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-950/40 border border-blue-500/20 text-xs">
-            <span className="size-1.5 rounded-full bg-blue-400" />
-
-            <span className="text-blue-300 font-medium text-[11px]">
-              {status.label}
-            </span>
-          </div>
 
           {/* Language */}
 
@@ -1283,10 +1342,6 @@ export default function Dashboard({ repo: repoProp }) {
                 <p className="text-xs text-slate-400">Grounded in repository</p>
               </div>
             </div>
-
-            <span className="text-[10px] font-mono tracking-wider px-2 py-0.5 rounded border border-indigo-500/30 text-indigo-300 uppercase bg-indigo-950/40">
-              RAG ACTIVE
-            </span>
           </div>
 
           {/* Repository Status Divider */}
@@ -1335,7 +1390,7 @@ export default function Dashboard({ repo: repoProp }) {
                   </div>
 
                   <div
-                    className={`text-xs leading-relaxed whitespace-pre-line ${
+                    className={`text-xs leading-relaxed whitespace-pre-line select-text ${
                       msg.isError ? "text-red-300" : "text-slate-300"
                     }`}
                   >
@@ -1534,7 +1589,7 @@ export default function Dashboard({ repo: repoProp }) {
 
             <span className="text-slate-600">&gt;</span>
 
-            <span className="truncate">
+            <span className="truncate select-text">
               {activeFileData?.path || "Select a file"}
             </span>
           </div>
@@ -1602,7 +1657,7 @@ export default function Dashboard({ repo: repoProp }) {
 
                         {/* Code */}
 
-                        <td className="whitespace-pre font-mono text-slate-200">
+                        <td className="whitespace-pre font-mono text-slate-200 select-text">
                           {highlightCodeLine(line)}
                         </td>
                       </tr>
@@ -1641,7 +1696,7 @@ export default function Dashboard({ repo: repoProp }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="relative w-full max-w-lg rounded-2xl bg-[#0c101c] border border-white/15 p-6 shadow-2xl shadow-indigo-950/50 z-10 flex flex-col gap-4 select-none"
+              className="relative w-full max-w-lg rounded-2xl bg-[#0c101c] border border-white/15 p-6 shadow-2xl shadow-indigo-950/50 z-10 flex flex-col gap-4"
             >
               {/* Modal Header */}
               <div className="flex items-start justify-between">
@@ -1701,6 +1756,120 @@ export default function Dashboard({ repo: repoProp }) {
                   placeholder="https://github.com/owner/repository"
                   className="w-full"
                 />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ==========================================
+          DELETE REPOSITORY CONFIRMATION MODAL
+      ========================================== */}
+      <AnimatePresence>
+        {repoToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                if (!deletingRepoId) {
+                  setRepoToDelete(null);
+                  setDeleteError("");
+                }
+              }}
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm cursor-pointer"
+            />
+
+            {/* Modal Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="relative w-full max-w-md rounded-2xl bg-[#0c101c] border border-red-500/20 p-6 shadow-2xl shadow-red-950/40 z-10 flex flex-col gap-4"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-xl bg-red-950/60 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
+                    <Trash2 className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-white">
+                      Delete Repository
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Remove from MongoDB & ChromaDB
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={!!deletingRepoId}
+                  onClick={() => {
+                    setRepoToDelete(null);
+                    setDeleteError("");
+                  }}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition cursor-pointer disabled:opacity-40"
+                  title="Close"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2 text-xs leading-relaxed text-slate-300">
+                <p>
+                  Are you sure you want to delete{" "}
+                  <span className="font-mono font-semibold text-white px-1.5 py-0.5 rounded bg-white/5 border border-white/10 select-text">
+                    {repoToDelete?.fullName || repoToDelete?.name}
+                  </span>
+                  ?
+                </p>
+                <p className="text-slate-400">
+                  This action will permanently delete the repository from the database and remove all its vectorized code embeddings from ChromaDB.
+                </p>
+              </div>
+
+              {deleteError && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-red-950/40 border border-red-500/30 text-xs text-red-300">
+                  <AlertCircle className="size-4 text-red-400 shrink-0" />
+                  <span className="flex-1">{deleteError}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-white/10">
+                <button
+                  type="button"
+                  disabled={!!deletingRepoId}
+                  onClick={() => {
+                    setRepoToDelete(null);
+                    setDeleteError("");
+                  }}
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5 border border-white/10 transition cursor-pointer disabled:opacity-40"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!!deletingRepoId}
+                  onClick={confirmDeleteRepository}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-red-600 hover:bg-red-500 text-white transition flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-lg shadow-red-950/50"
+                >
+                  {deletingRepoId ? (
+                    <>
+                      <Loader2 className="size-3.5 animate-spin" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="size-3.5" />
+                      <span>Delete Repository</span>
+                    </>
+                  )}
+                </button>
               </div>
             </motion.div>
           </div>

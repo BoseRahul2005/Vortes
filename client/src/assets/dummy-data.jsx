@@ -1,85 +1,39 @@
-import { UploadIcon, VideoIcon, ZapIcon } from 'lucide-react';
+import { GitPullRequest, SearchCode, BotMessageSquare } from 'lucide-react';
 
 export const featuresData = [
     {
-        icon: <UploadIcon className="w-6 h-6" />,
-        title: 'Discovery & Planning',
-        desc: 'We understand your goals, audience and challenges to craft a clear, actionable strategy.'
+        icon: <GitPullRequest className="w-6 h-6" />,
+        title: 'GitHub Integration',
+        desc: 'Connect your GitHub repositories seamlessly and import your codebase for intelligent analysis.'
     },
     {
-        icon: <ZapIcon className="w-6 h-6" />,
-        title: 'Design & Development',
-        desc: 'High-quality design and scalable development focused on performance and usability.'
+        icon: <BotMessageSquare className="w-6 h-6" />,
+        title: 'AI-Powered Code Understanding',
+        desc: 'Leverage RAG-powered AI to understand your codebase, explore implementations and get context-aware answers.'
     },
     {
-        icon: <VideoIcon className="w-6 h-6" />,
-        title: 'Launch & Growth',
-        desc: 'We launch, optimize and continuously improve to drive measurable business growth.'
-    }
-];
-
-export const plansData = [
-    {
-        id: 'starter',
-        name: 'Starter',
-        price: '$499',
-        desc: 'Best for early-stage startups.',
-        credits: 'One-time',
-        features: [
-            'Project discovery & planning',
-            'UI/UX design',
-            'Basic website development',
-            '1 revision round',
-            'Email support'
-        ]
-    },
-    {
-        id: 'pro',
-        name: 'Growth',
-        price: '$1,499',
-        desc: 'Growing teams and businesses.',
-        credits: 'Monthly',
-        features: [
-            'Everything in Starter',
-            'Advanced UI/UX design',
-            'Custom development',
-            'Performance optimization',
-            'Priority support'
-        ],
-        popular: true
-    },
-    {
-        id: 'ultra',
-        name: 'Scale',
-        price: '$3,999',
-        desc: 'For brands ready to scale fast.',
-        credits: 'Custom',
-        features: [
-            'Everything in Growth',
-            'Dedicated project manager',
-            'Ongoing optimization',
-            'Marketing & growth support',
-            'Chat + Email support'
-        ]
+        icon: <SearchCode className="w-6 h-6" />,
+        title: 'Smart Code Exploration',
+        desc: 'Navigate project structures, discover relevant files and quickly find answers across your entire repository.'
     }
 ];
 
 export const faqData = [
     {
-        question: 'What services does your agency provide?',
-        answer: 'We offer end-to-end digital services including brand strategy, UI/UX design, web and app development and growth-focused marketing solutions.'
+        question: 'What is Vortes?',
+        answer: 'Vortes is an AI-powered codebase assistant that helps developers understand, explore, and navigate GitHub repositories. Simply connect your repository and ask questions about its codebase to get intelligent, context-aware answers.'
     },
     {
-        question: 'Do you work with startups or only large companies?',
-        answer: 'We work with startups, growing businesses and established brands. Our process is flexible and tailored to match your goals and scale.'
+        question: 'How does Vortes understand my codebase?',
+        answer: 'Vortes uses Retrieval-Augmented Generation (RAG) to analyze your repository. It processes source code, breaks it into meaningful chunks, generates embeddings, and retrieves relevant code snippets to provide accurate answers to your questions.'
     },
     {
-        question: 'How long does a typical project take?',
-        answer: 'Project timelines vary by scope, but most projects take between 2–6 weeks. We provide a clear timeline after the discovery phase.'
+        question: 'Which GitHub repositories can I connect?',
+        answer: 'You can connect GitHub repositories and let Vortes index their source code. Once indexing is complete, you can explore files, understand project structure, and ask questions about your codebase.'
     },
     {
-        question: 'Do you offer ongoing support after launch?',
-        answer: 'Yes. We offer maintenance, optimization and growth support packages to ensure your product continues to perform and evolve.'
+        question: 'Can Vortes answer questions about specific code implementations?',
+        answer: 'Absolutely! You can ask questions like "Where is authentication handled?", "How does the API work?", or "Which component manages user state?" Vortes retrieves relevant code from your repository to generate answers with useful context.'
     }
 ];
 

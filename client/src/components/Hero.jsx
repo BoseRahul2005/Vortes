@@ -7,7 +7,7 @@ import API from "../api/axios";
 import { useNavigate } from "react-router-dom";
 
 export default function Hero() {
-  const navigate=useNavigate();
+  const navigate = useNavigate();
 
   const mainImageUrl =
     "https://images.unsplash.com/photo-1576267423445-b2e0074d68a4?q=80&w=1600&auto=format&fit=crop";
@@ -18,22 +18,14 @@ export default function Hero() {
     "https://images.unsplash.com/photo-1553877522-43269d4ea984?q=80&w=100",
   ];
 
-  const trustedLogosText = [
-    "Startups",
-    "Scale-ups",
-    "Founders",
-    "Global teams",
-    "Creative brands",
-  ];
-
   const handleAnalyze = (repoUrl) => {
-    navigate('/onboard', {
-        state: {
-            mode: 'new',
-            repoUrl,
-        },
+    navigate("/onboard", {
+      state: {
+        mode: "new",
+        repoUrl,
+      },
     });
-};
+  };
 
   return (
     <>
@@ -41,7 +33,6 @@ export default function Hero() {
         <div className="max-w-6xl mx-auto px-4 min-h-screen max-md:w-screen max-md:overflow-hidden pt-32 md:pt-26 flex items-center justify-center">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
             <div className="text-left">
-
               <motion.h1
                 className="text-4xl md:text-5xl font-bold leading-tight mb-6 max-w-xl"
                 initial={{ y: 60, opacity: 0 }}
@@ -55,9 +46,9 @@ export default function Hero() {
                   delay: 0.1,
                 }}
               >
-                We design & build <br />
+                Understand your codebase <br />
                 <span className="bg-clip-text text-transparent bg-linear-to-r from-indigo-300 to-indigo-400">
-                  high-impact digital experiences
+                  like never before
                 </span>
               </motion.h1>
 
@@ -74,9 +65,9 @@ export default function Hero() {
                   delay: 0.2,
                 }}
               >
-                A creative digital agency helping startups and businesses grow
-                through thoughtful design, scalable development and
-                performance-driven strategy.
+                Your AI-powered codebase assistant. Connect your GitHub
+                repository, explore complex code, and get instant, context-aware
+                answers with the power of Retrieval-Augmented Generation.
               </motion.p>
 
               <motion.div
@@ -102,10 +93,8 @@ export default function Hero() {
                 </Show>
 
                 <Show when="signed-in">
-                  <RepositoryInput onAnalyze={handleAnalyze}/>
+                  <RepositoryInput onAnalyze={handleAnalyze} />
                 </Show>
-
-                
               </motion.div>
 
               <motion.div
@@ -124,9 +113,9 @@ export default function Hero() {
                 <div className="flex items-center gap-2 p-2 px-3 sm:px-6.5 hover:bg-white/3 transition-colors">
                   <ZapIcon className="size-4 text-sky-500" />
                   <div>
-                    <div>Strategy-led execution</div>
+                    <div>AI-powered code intelligence</div>
                     <div className="text-xs text-gray-400">
-                      Focused on growth & results
+                      Understand code faster
                     </div>
                   </div>
                 </div>
@@ -136,9 +125,9 @@ export default function Hero() {
                 <div className="flex items-center gap-2 p-2 px-3 sm:px-6.5 hover:bg-white/3 transition-colors">
                   <CheckIcon className="size-4 text-cyan-500" />
                   <div>
-                    <div>Full-service delivery</div>
+                    <div>Seamless GitHub integration</div>
                     <div className="text-xs text-gray-400">
-                      Design, dev & marketing
+                      Your entire codebase, connected
                     </div>
                   </div>
                 </div>
@@ -166,92 +155,12 @@ export default function Hero() {
                     alt="agency-work-preview"
                     className="w-full h-full object-cover object-center"
                   />
-
-                  <div className="absolute left-4 top-4 px-3 py-1 rounded-full bg-black/15 backdrop-blur-sm text-xs">
-                    Branding • Web • Growth
-                  </div>
-
-                  <div className="absolute right-4 bottom-4">
-                    <button className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white/6 backdrop-blur-sm hover:bg-white/10 transition focus:outline-none">
-                      <PlayIcon className="size-4" />
-                      <span className="text-xs">See case study</span>
-                    </button>
-                  </div>
                 </div>
               </motion.div>
-
-              <div className="mt-4 flex gap-3 items-center justify-start">
-                {galleryStripImages.map((src, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ y: 20, opacity: 0 }}
-                    whileInView={{ y: 0, opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 250,
-                      damping: 70,
-                      mass: 1,
-                      delay: 0.1 + i * 0.1,
-                    }}
-                    className="w-14 h-10 rounded-lg overflow-hidden border border-white/6"
-                  >
-                    <img
-                      src={src}
-                      alt="project-thumbnail"
-                      className="w-full h-full object-cover"
-                    />
-                  </motion.div>
-                ))}
-                <motion.div
-                  className="text-sm text-gray-400 ml-2 flex items-center gap-2"
-                  initial={{ y: 60, opacity: 0 }}
-                  whileInView={{ y: 0, opacity: 1 }}
-                  viewport={{ once: true }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 250,
-                    damping: 70,
-                    mass: 1,
-                    delay: 0.2,
-                  }}
-                >
-                  <div className="relative flex h-3.5 w-3.5 items-center justify-center">
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping duration-300" />
-
-                    <span className="relative inline-flex size-2 rounded-full bg-green-600" />
-                  </div>
-                  20+ completed projects
-                </motion.div>
-              </div>
             </motion.div>
           </div>
         </div>
       </section>
-
-      {/* LOGO MARQUEE */}
-      <motion.section
-        className="border-y border-white/6 bg-white/1 max-md:mt-10"
-        initial={{ y: 60, opacity: 0 }}
-        whileInView={{ y: 0, opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ type: "spring", stiffness: 250, damping: 70, mass: 1 }}
-      >
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="w-full overflow-hidden py-6">
-            <div className="flex gap-14 items-center justify-center animate-marquee whitespace-nowrap">
-              {trustedLogosText.concat(trustedLogosText).map((logo, i) => (
-                <span
-                  key={i}
-                  className="mx-6 text-sm md:text-base font-semibold text-gray-400 hover:text-gray-300 tracking-wide transition-colors"
-                >
-                  {logo}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </motion.section>
     </>
   );
 }

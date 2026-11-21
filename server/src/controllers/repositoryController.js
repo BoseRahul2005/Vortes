@@ -9,6 +9,7 @@ const {
 const Repository = require("../models/Repository.js");
 const buildFileTree = require("../utils/buildFileTree.js");
 const { ingestRepository } = require("../services/ingestionService.js");
+const { deleteRepository: deleteVectorRepository } = require("../rag/vectorStoreService.js");
 
 // Check if a repository is already in the database and verify its files
 const checkRepository = async (req, res) => {
@@ -351,6 +352,71 @@ const getUserRepositories = async (req, res) => {
   }
 };
 
+const deleteRepository = async (req, res) => {
+  try {
+    const { userId } = getAuth(req);
+    const { id } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized. Please sign in.",
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid repository ID.",
+      });
+    }
+
+    // 1. Find repository in MongoDB belonging to this user
+    const repository = await Repository.findOne({
+      _id: id,
+      userId,
+    });
+
+    if (!repository) {
+      return res.status(404).json({
+        success: false,
+        message: "Repository not found or you do not have permission to delete it.",
+      });
+    }
+
+    // 2. Delete vectors from ChromaDB (if ChromaDB is available)
+    let chromaResult = { deletedCount: 0 };
+    try {
+      chromaResult = await deleteVectorRepository(String(repository._id));
+      console.log(
+        `[Delete] Successfully deleted ${chromaResult.deletedCount || 0} vectors from ChromaDB for ${repository.fullName}`
+      );
+    } catch (chromaError) {
+      console.warn(
+        `[Delete] ChromaDB vector deletion warning for repository ${repository.fullName}:`,
+        chromaError.message
+      );
+    }
+
+    // 3. Delete from MongoDB
+    await Repository.deleteOne({ _id: repository._id, userId });
+
+    return res.status(200).json({
+      success: true,
+      message: "Repository deleted successfully from MongoDB and ChromaDB.",
+      repositoryId: id,
+      deletedRepoName: repository.fullName || repository.name,
+      chromaDeletedCount: chromaResult.deletedCount || 0,
+    });
+  } catch (error) {
+    console.error("Delete repository error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to delete repository.",
+    });
+  }
+};
+
 module.exports = {
   checkRepository,
   addRepository,
@@ -358,4 +424,5 @@ module.exports = {
   getRepositoryById,
   getRepositoryFiles,
   getRepositoryFileContent,
+  deleteRepository,
 };

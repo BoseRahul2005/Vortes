@@ -172,7 +172,7 @@ export default function Onboard() {
   const branch = repoData?.defaultBranch || "Default branch";
 
   return (
-    <div className="min-h-screen w-screen bg-[#05070e] text-slate-200 flex flex-col items-center justify-center p-6 relative select-none">
+    <div className="min-h-screen w-screen bg-[#05070e] text-slate-200 flex flex-col items-center justify-center p-6 relative">
       {/* Subtle background ambient radial glow */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-indigo-900/10 rounded-full blur-[120px] pointer-events-none" />
 
